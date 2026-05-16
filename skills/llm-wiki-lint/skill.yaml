@@ -1,0 +1,64 @@
+name: llm-wiki-lint
+purpose: >
+  Validate structural integrity and consistency of the LLM Wiki by running
+  lint.py and surfacing broken links, stale pages, invalid frontmatter,
+  duplicate concepts, and source integrity issues.
+trigger:
+  user_phrases:
+    - lint
+    - 检查
+    - validate wiki
+    - health check
+    - wiki audit
+  intent_signals:
+    - The user wants to find structural or consistency issues in the wiki.
+    - The user wants broken links, duplicate concepts, or stale pages identified.
+inputs:
+  required: []
+  optional:
+    - name: fix
+      description: If true, attempt to auto-fix lint issues rather than just report them.
+outputs:
+  primary:
+    - path: stdout
+      description: Lint report listing all detected issues and their severity.
+  side_effects:
+    - wiki/ pages may be updated if fix mode is active.
+    - wiki/log.md appended when fixes are made.
+dependencies:
+  skills: []
+  scripts:
+    - .codex/skills/llm-wiki-lint/lint.py
+  tools:
+    - python3
+  env:
+    - .venv/bin/python3
+  external_services: []
+failure_modes:
+  - mode: script_not_found
+    detection: lint.py cannot be located at expected path.
+    response: Report error and fall back to manual lint checks per SKILL.md instructions.
+  - mode: no_issues_found
+    detection: Lint completes with zero errors.
+    response: Report clean status; optionally suggest a reflect pass for deeper synthesis gaps.
+evaluation:
+  success_signals:
+    - Lint script exits 0 with a clean report, or exits nonzero with actionable issue list.
+  checks:
+    - Confirm script ran to completion.
+    - Confirm report covers frontmatter, links, index, and language checks.
+  artifacts:
+    - stdout lint report
+schedule_eligibility:
+  eligible: true
+  execution_mode: local_only
+  rationale: Deterministic script with no external dependencies; safe to run on a schedule.
+  cadence_examples:
+    - weekly
+    - after bulk ingest
+security:
+  risk_level: read
+  confirmation_required: false
+  reason: Report-only by default; fix mode requires explicit flag and is human-invoked.
+  write_paths: []
+agents: [claude, codex]

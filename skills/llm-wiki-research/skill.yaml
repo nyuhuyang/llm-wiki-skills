@@ -1,0 +1,94 @@
+name: llm-wiki-research
+purpose: >
+  Deep synthesis, cross-source pattern discovery, and gap analysis across the LLM Wiki.
+  Subsumes llm-wiki-reflect. Produces persisted syntheses and gap reports.
+trigger:
+  user_phrases:
+    - research
+    - reflect
+    - synthesize
+    - 综合分析
+    - 找规律
+    - discover patterns
+    - identify gaps
+    - cross-source insights
+    - what does my wiki say about
+    - what patterns
+    - gap analysis
+    - add question
+    - track question
+    - 记录一个问题
+    - 我想搞清楚
+    - merge duplicates
+    - consolidate pages
+  intent_signals:
+    - The user wants synthesis across multiple wiki pages rather than a direct point answer.
+    - The user wants knowledge gaps or underexplored areas surfaced.
+    - The user wants a hypothesis tested against existing wiki knowledge.
+    - The user wants to track an unresolved question in the wiki.
+    - The user wants to merge duplicate wiki pages.
+inputs:
+  required: []
+  optional:
+    - name: domain
+      description: Restrict research to a specific domain or concept area.
+    - name: focus
+      description: Particular angle, hypothesis, or question to investigate.
+outputs:
+  primary:
+    - path: wiki/syntheses/YYYY-MM-DD-<topic>.md
+      description: Synthesis document with thesis, evidence, counter-evidence, and confidence notes.
+    - path: outputs/gap-report-YYYY-MM-DD.md
+      description: Gap analysis report summarizing missing pages, blind spots, and sparse areas.
+    - path: wiki/QUESTIONS.md
+      description: Updated open questions tracker (question/gap mode).
+  side_effects:
+    - wiki/log.md appended.
+    - wiki/index.md refreshed if it tracks recent outputs.
+    - Duplicate pages removed (merge mode, requires user confirmation).
+dependencies:
+  skills: []
+  scripts: []
+  tools: []
+  env: []
+  external_services: []
+failure_modes:
+  - mode: echo_chamber
+    detection: All sources agree with no contradicting evidence found.
+    response: Flag echo-chamber risk explicitly; do not generate confident thesis without opposing evidence.
+  - mode: sparse_coverage
+    detection: Too few wiki pages exist to support meaningful pattern discovery.
+    response: Report sparse coverage and recommend ingest before researching.
+  - mode: destructive_merge
+    detection: Merge would delete a page with unique content.
+    response: Present candidate to user; require explicit confirmation before deleting.
+evaluation:
+  success_signals:
+    - Synthesis written to wiki/syntheses/.
+    - Gap report written to outputs/.
+    - Synthesis distinguishes supported patterns from speculation.
+    - Counter-evidence checked before thesis generation.
+    - Open questions persisted to wiki/QUESTIONS.md.
+    - No pages merged without user confirmation.
+  checks:
+    - Confirm synthesis has type: synthesis in frontmatter.
+    - Confirm sources field names at least one grounding wiki/sources/ page.
+    - Confirm gap report exists at expected path.
+    - Confirm at least one limitation or counter-evidence section present.
+  artifacts:
+    - wiki/syntheses/
+    - outputs/gap-report-YYYY-MM-DD.md
+    - wiki/QUESTIONS.md
+schedule_eligibility:
+  eligible: true
+  execution_mode: local_only
+  rationale: Periodic gap analysis on a stable wiki corpus provides ongoing value without human input.
+  cadence_examples:
+    - weekly
+    - after bulk ingest
+security:
+  risk_level: write
+  confirmation_required: false
+  reason: Writes syntheses, gap reports, questions; merge mode requires user confirmation before any deletion.
+  write_paths: ["wiki/syntheses/", "outputs/", "wiki/QUESTIONS.md"]
+agents: [claude, codex]

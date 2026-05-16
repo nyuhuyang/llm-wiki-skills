@@ -1,0 +1,82 @@
+name: llm-wiki-save
+purpose: >
+  Two modes: SAVE scans conversation history for genuinely valuable content and
+  selectively writes to the wiki (not a transcript dump; applies value judgment).
+  QUERY retrieves and answers questions from existing wiki content with grounded
+  citations and optional persistence.
+trigger:
+  user_phrases:
+    - /llm-wiki-save
+    - save the good stuff
+    - save what's worth keeping
+    - save valuable insights from this conversation
+    - distill this conversation
+    - save this conversation to wiki
+    - 根据我的知识库
+    - what does the wiki say about
+    - query the wiki
+    - look up in wiki
+    - synthesize from existing knowledge
+  intent_signals:
+    - The user has completed a productive multi-turn conversation and wants durable artifacts.
+    - The user wants Claude to judge what's valuable rather than specifying exactly what to save.
+    - The user asks a knowledge question answerable from existing wiki content.
+    - The user wants a grounded answer citing wiki/sources/ pages.
+inputs:
+  required: []
+  optional:
+    - name: question
+      description: For QUERY mode — the research question to answer from wiki content.
+    - name: destination
+      description: For SAVE mode — preferred destination type (syntheses, concepts, entities, outputs).
+    - name: slug
+      description: Preferred filename slug for the output file.
+outputs:
+  primary:
+    - path: wiki/syntheses/<slug>.md or wiki/concepts/<slug>.md or wiki/entities/<slug>.md or outputs/<slug>.md
+      description: Persisted artifact at the routed destination (SAVE) or grounded answer (QUERY).
+  side_effects:
+    - wiki/log.md appended.
+    - wiki/index.md refreshed if it tracks recent outputs.
+    - wiki/QUESTIONS.md updated if open questions are resolved.
+dependencies:
+  skills: []
+  scripts: []
+  tools: []
+  env: []
+  external_services: []
+failure_modes:
+  - mode: ambiguous_destination
+    detection: Artifact type does not clearly map to a destination.
+    response: State the routing choice and reasoning before writing.
+  - mode: duplicate_page
+    detection: An existing concept/entity page already covers this content.
+    response: Update the existing page rather than creating a new one.
+  - mode: insufficient_wiki_coverage
+    detection: Wiki lacks enough sources to answer a QUERY confidently.
+    response: Report coverage gaps and suggest an ingest or research pass.
+  - mode: conflicting_sources
+    detection: wiki/sources/ pages contradict each other on the question.
+    response: Surface the contradiction explicitly rather than blending it away.
+evaluation:
+  success_signals:
+    - SAVE — artifact written to correct destination, wiki/log.md updated.
+    - QUERY — answer grounds core claims in wiki/sources/ citations, confidence level stated.
+  checks:
+    - Confirm destination matches artifact type.
+    - Confirm no duplicate page created.
+    - QUERY — confirm at least one wiki/sources/ page was read.
+  artifacts:
+    - written file path (SAVE)
+    - stdout answer with citations (QUERY)
+schedule_eligibility:
+  eligible: false
+  execution_mode: local_only
+  rationale: Both modes are triggered by explicit user intent; not schedulable.
+  cadence_examples: []
+security:
+  risk_level: write
+  confirmation_required: false
+  reason: Writes to wiki/ or outputs/ only; never modifies raw/.
+  write_paths: ["wiki/syntheses/", "wiki/concepts/", "wiki/entities/", "outputs/"]
+agents: [claude, codex]
