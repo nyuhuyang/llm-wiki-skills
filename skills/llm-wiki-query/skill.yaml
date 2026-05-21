@@ -1,0 +1,77 @@
+name: llm-wiki-query
+purpose: >
+  Answer point questions from the existing LLM Wiki with grounded citations,
+  targeted retrieval, and optional persistence when the answer is reusable.
+trigger:
+  user_phrases:
+    - query the wiki
+    - what does the wiki say about
+    - based on my knowledge base
+    - look up in wiki
+    - wiki says
+    - find in the wiki
+    - retrieve from wiki
+  intent_signals:
+    - The user wants a direct answer grounded in existing wiki pages.
+    - The user wants evidence or citations from the knowledge base.
+    - The user is asking a specific fact, definition, or comparison already covered by the wiki.
+inputs:
+  required: []
+  optional:
+    - name: question
+      description: Specific query or claim to verify against the wiki.
+    - name: domain
+      description: Restrict retrieval to a topic area or page family.
+outputs:
+  primary:
+    - path: chat response
+      description: Concise answer grounded in existing wiki pages.
+  side_effects:
+    - wiki/syntheses/ may be written if the answer is reusable.
+    - outputs/ may be written for short utility reports.
+    - wiki/log.md may be appended if a file is written.
+    - wiki/QUESTIONS.md may be updated if the answer resolves a tracked question.
+dependencies:
+  skills: []
+  scripts: []
+  tools: []
+  env: []
+  external_services: []
+failure_modes:
+  - mode: sparse_corpus
+    detection: The wiki does not contain enough relevant pages to answer confidently.
+    response: Say the corpus is thin and identify the missing coverage.
+  - mode: conflicting_sources
+    detection: Relevant wiki pages disagree materially.
+    response: Surface the disagreement and cite both sides instead of blending them.
+  - mode: stale_evidence
+    detection: The relevant pages are old or the claim is time-sensitive.
+    response: Note staleness and prefer the freshest grounded page.
+  - mode: wrong_skill
+    detection: The user asks for synthesis, gap analysis, or raw-source ingestion.
+    response: Redirect to llm-wiki-research or llm-wiki-ingest as appropriate.
+evaluation:
+  success_signals:
+    - Answer cites relevant wiki pages.
+    - Answer stays narrow and grounded.
+    - Conflicts and caveats are explicit.
+    - Reusable answers are persisted when appropriate.
+  checks:
+    - Confirm retrieval started from wiki/index.md or direct relevant pages.
+    - Confirm answers do not introduce unsupported claims.
+  artifacts:
+    - wiki/syntheses/
+    - outputs/
+    - wiki/log.md
+    - wiki/QUESTIONS.md
+schedule_eligibility:
+  eligible: false
+  execution_mode: local_only
+  rationale: Requires user-specific retrieval intent and human judgment about answer scope.
+  cadence_examples: []
+security:
+  risk_level: write
+  confirmation_required: false
+  reason: Reads wiki content and may persist reusable answers or tracker updates.
+  write_paths: ["wiki/syntheses/", "outputs/", "wiki/log.md", "wiki/QUESTIONS.md"]
+agents: [claude, codex]

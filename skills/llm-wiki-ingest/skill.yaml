@@ -2,6 +2,8 @@ name: llm-wiki-ingest
 purpose: >
   Convert raw knowledge sources into persistent wiki pages with traceability,
   deduplication checks, and structured extraction of concepts, entities, and syntheses.
+  Supports --deep flag for exhaustive 4-pass extraction: structure map, claim-level
+  extraction, relationship triples, and cross-wiki contradiction scan.
 trigger:
   user_phrases:
     - ingest
@@ -9,10 +11,17 @@ trigger:
     - 处理这个
     - process this source
     - add to wiki
+    - deep ingest
+    - --deep
+    - 仔细
+    - 非常仔细
+    - exhaustive ingest
+    - thorough ingest
   intent_signals:
     - The user provides a raw file to be compiled into wiki pages.
     - The user wants source material converted to grounded wiki knowledge.
     - The user provides a .docx, Word, or PDF file to add to the knowledge base.
+    - The user wants maximum extraction depth, claim-level sourcing, or relationship mapping.
 inputs:
   required:
     - name: source_path
@@ -23,6 +32,13 @@ inputs:
   optional:
     - name: focus
       description: Specific aspect or angle to prioritize during extraction.
+    - name: deep
+      description: >
+        Flag (--deep) enabling 4-pass exhaustive extraction protocol: (1) structure map,
+        (2) claim-level extraction table, (3) entity-relationship triples, (4) cross-wiki
+        contradiction scan. Enforces claim-level sourcing, relationship sections on all
+        pages, and mandatory question generation. Use for dense technical sources,
+        foundational references, or any source the user wants fully mined.
 outputs:
   primary:
     - path: wiki/sources/<slug>.md

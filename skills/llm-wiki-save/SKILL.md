@@ -1,6 +1,11 @@
 ---
 name: llm-wiki-save
-description: Two modes — SAVE: after a multi-turn conversation, scan history for genuinely valuable content and selectively save to wiki (not a dump; applies judgment). QUERY: retrieve and answer questions from existing wiki content with grounded citations. Trigger SAVE with /llm-wiki-save or "save the good stuff". Trigger QUERY with "根据我的知识库", "what does the wiki say about", or "query the wiki".
+description: >-
+  Two modes — SAVE: after a multi-turn conversation, scan history for genuinely
+  valuable content and selectively save to wiki (not a dump; applies judgment).
+  QUERY: retrieve and answer questions from existing wiki content with grounded
+  citations. Trigger SAVE with /llm-wiki-save or "save the good stuff". Trigger
+  QUERY with "根据我的知识库", "what does the wiki say about", or "query the wiki".
 ---
 
 # LLM Wiki Save

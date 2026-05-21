@@ -1,0 +1,4 @@
+interface:
+  display_name: "LLM Wiki Query"
+  short_description: "Retrieve grounded answers from the LLM Wiki"
+  default_prompt: "Use this skill to answer questions from existing wiki content with grounded citations, targeted retrieval, and optional persistence when the answer is reusable."

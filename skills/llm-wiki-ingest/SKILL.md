@@ -1,6 +1,6 @@
 ---
 name: llm-wiki-ingest
-description: Ingest new raw knowledge sources into the LLM Wiki. Use when the user says ingest, 摄入, 处理这个, provides a raw file (markdown, Word .docx, PDF, or any text source), or wants source material compiled into wiki pages with traceability, deduplication checks, and persisted updates. Also trigger when the user provides a .docx, Word, or PDF file they want added to the knowledge base.
+description: Ingest new raw knowledge sources into the LLM Wiki. Use when the user says ingest, 摄入, 处理这个, provides a raw file (markdown, Word .docx, PDF, or any text source), or wants source material compiled into wiki pages with traceability, deduplication checks, and persisted updates. Also trigger when the user provides a .docx, Word, or PDF file they want added to the knowledge base. Supports --deep flag for exhaustive multi-pass extraction with claim-level sourcing, relationship triples, and mandatory cross-wiki contradiction scan.
 ---
 
 # LLM Wiki Ingest
@@ -156,6 +156,87 @@ If raw frontmatter `tags` are exactly `["clippings"]` and only that single tag:
 14. Run a coverage audit before finishing: confirm that each major source section contributed either pages, source-page notes, or a written reason why nothing was persisted.
 15. Update `wiki/index.md` and append a timestamped line to `wiki/log.md`.
 
+## Deep Mode (`--deep`)
+
+Activate when the user passes `--deep`, says "deep ingest", "仔细", "非常仔细", "exhaustive", or "thorough ingest".
+
+Deep mode replaces the standard single-pass extraction with a **4-pass protocol** that runs before writing any pages. Every pass must produce written output before the next begins.
+
+### Pass 1 — Structure Map
+
+Produce a structural inventory of the entire source:
+
+```
+| Section heading | Depth | Has tables | Has figures | Has code | Word count (approx) |
+```
+
+Every `#`, `##`, `###` heading gets a row. If no heading structure exists, divide by natural paragraph breaks. No section may be collapsed or skipped. This table is written out in full before Pass 2 begins.
+
+### Pass 2 — Claim-Level Extraction
+
+For every section from Pass 1, extract **every factual claim** with its exact location anchor:
+
+```
+| Section | Claim | Claim type | Confidence signal in source |
+```
+
+Claim types: `definition`, `assertion`, `mechanism`, `causal`, `comparative`, `limitation`, `assumption`, `counterintuitive`. A long source will produce 50–200 rows; do not collapse. Write out the full table before Pass 3 begins.
+
+### Pass 3 — Relationship Triples
+
+From the claims in Pass 2, derive explicit entity-relationship triples:
+
+```
+| Subject | Relation | Object | Claim row ref |
+```
+
+Relation vocabulary (use exact terms): `implements`, `exemplifies`, `contradicts`, `enables`, `requires`, `is-a`, `part-of`, `causally-precedes`, `measures`, `replaces`, `extends`. Every triple must reference the claim row it was derived from. Write the full triple list before Pass 4 begins.
+
+### Pass 4 — Cross-Wiki Contradiction Scan
+
+For every concept or entity named in Pass 2:
+
+1. Search `wiki/concepts/` and `wiki/entities/` for an existing page.
+2. If found, read it and compare every claim in Pass 2 against what the wiki already asserts.
+3. Flag contradictions, updates, and confirmations explicitly:
+
+```
+| Concept | Existing wiki claim | New source claim | Status (confirms | updates | contradicts) |
+```
+
+Write this table in full. Do not skip concepts just because no existing page was found — note "no existing page" in the Status column.
+
+### After the 4 Passes
+
+Proceed with the standard flow from step 6 (create/update source page), but with these additional requirements enforced in deep mode:
+
+- **Claim-level sourcing**: every factual statement added to a concept/entity page gets an inline anchor: `> Source: <title>, § <section>`. Not just a wikilink — a paragraph-level reference.
+- **Relationship section**: every concept/entity page updated in deep mode must have a `## Relationships` section listing all triples from Pass 3 involving that concept.
+- **Exhaustive question generation**: after writing pages, scan for every gap, ambiguity, or incomplete explanation. Generate at least 1 open question per 5 concepts extracted. Append all to `wiki/QUESTIONS.md`.
+- **Coverage matrix**: before finishing, produce a final coverage matrix:
+
+```
+| Section | Concepts extracted | Claims persisted | Relationships | Questions generated | Status |
+```
+
+Every row must reach "complete" status. Any "partial" row requires a written reason.
+
+### Deep Mode Completion Summary
+
+Extend the standard Ingest Complete block with:
+
+```
+**Mode:** deep
+**Passes completed:** 4/4
+**Claims extracted:** <N>
+**Relationship triples:** <N>
+**Contradictions found:** <N> (list if any)
+**Questions generated:** <N> (appended to QUESTIONS.md)
+**Coverage matrix:** all sections complete / <N> partial (with reasons)
+```
+
+---
+
 ## Extraction Granularity
 
 **Source vs. concepts are strictly separate:**
@@ -274,3 +355,14 @@ Format:
 ```
 
 Omit any section that has nothing to report (e.g., if no open questions were answered, drop that line). Keep it concise — one line per page is enough.
+
+## Output Telemetry
+
+At the very end of every response, emit these two lines (substitute real values):
+
+```
+OUTPUT_PATH: wiki/sources/YYYY-MM-DD-slug.md
+QUALITY: 0.8
+```
+
+`OUTPUT_PATH` is the path (relative to `KB_ROOT`) of the primary file written. `QUALITY` is your self-assessed quality score for this run (0.0–1.0). Emit both lines even if no file was written (use `""` for path and `0.0` for quality). These lines are parsed by the runner for telemetry.
