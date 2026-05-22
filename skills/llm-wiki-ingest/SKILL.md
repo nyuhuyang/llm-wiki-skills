@@ -178,9 +178,11 @@ Before claim extraction, scan the full source for every image reference:
 - Markdown: `![alt](path)` or `![alt](url)`
 - HTML img tags: `<img src="...">`
 
+**Path resolution for `.docx`-derived sources:** images extracted by pandoc land in `raw/assets/<slug>/` (relative to KB root). If an image path in the converted markdown is relative (e.g., `raw/assets/<slug>/image1.png`), resolve it from KB root. Do not search elsewhere.
+
 For each image found:
 
-1. **Local path** — read the file directly using the Read tool (supports PNG, JPG, etc.).
+1. **Local path** — resolve relative paths from KB root; check `raw/assets/<slug>/` first for docx-derived sources. Read the file directly using the Read tool (supports PNG, JPG, etc.).
 2. **URL** — fetch using WebFetch if publicly accessible.
 3. **Describe** — produce a structured annotation:
    ```
