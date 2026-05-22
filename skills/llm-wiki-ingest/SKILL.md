@@ -172,6 +172,35 @@ Produce a structural inventory of the entire source:
 
 Every `#`, `##`, `###` heading gets a row. If no heading structure exists, divide by natural paragraph breaks. No section may be collapsed or skipped. This table is written out in full before Pass 2 begins.
 
+### Pass 1.5 — Image Vision
+
+Before claim extraction, scan the full source for every image reference:
+- Markdown: `![alt](path)` or `![alt](url)`
+- HTML img tags: `<img src="...">`
+
+For each image found:
+
+1. **Local path** — read the file directly using the Read tool (supports PNG, JPG, etc.).
+2. **URL** — fetch using WebFetch if publicly accessible.
+3. **Describe** — produce a structured annotation:
+   ```
+   [IMAGE: <filename or url>]
+   Alt text: <original alt text or "none">
+   Visual description: <what the image shows — diagrams, charts, screenshots, text in image, arrows, labels, data>
+   Key information: <any facts, numbers, relationships, or concepts readable from the image>
+   Relevance: <how this image relates to surrounding text>
+   ```
+4. **Inject** — insert the annotation inline, immediately after the image reference in the working copy of the source text. The original source file is NOT modified.
+5. **Skip** — if image is inaccessible (broken path, auth-gated URL, etc.), note `[IMAGE SKIPPED: <reason>]` and continue.
+
+Produce an image inventory table before proceeding to Pass 2:
+
+```
+| # | Image ref | Type | Status | Key content summary |
+```
+
+If no images found: note "no images" and skip this pass entirely.
+
 ### Pass 2 — Claim-Level Extraction
 
 For every section from Pass 1, extract **every factual claim** with its exact location anchor:

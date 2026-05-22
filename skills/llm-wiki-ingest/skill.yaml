@@ -34,11 +34,13 @@ inputs:
       description: Specific aspect or angle to prioritize during extraction.
     - name: deep
       description: >
-        Flag (--deep) enabling 4-pass exhaustive extraction protocol: (1) structure map,
-        (2) claim-level extraction table, (3) entity-relationship triples, (4) cross-wiki
-        contradiction scan. Enforces claim-level sourcing, relationship sections on all
-        pages, and mandatory question generation. Use for dense technical sources,
-        foundational references, or any source the user wants fully mined.
+        Flag (--deep) enabling exhaustive extraction protocol with 5 passes: (1) structure
+        map, (1.5) image vision — reads every image in the source via vision model and
+        injects structured descriptions before extraction, (2) claim-level extraction table,
+        (3) entity-relationship triples, (4) cross-wiki contradiction scan. Enforces
+        claim-level sourcing, relationship sections on all pages, and mandatory question
+        generation. Use for dense technical sources, foundational references, or any source
+        the user wants fully mined including visual content.
 outputs:
   primary:
     - path: wiki/sources/<slug>.md
@@ -86,6 +88,9 @@ failure_modes:
   - mode: pandoc_conversion_failed
     detection: pandoc exits non-zero or produces empty output.
     response: Report the pandoc error message verbatim and stop.
+  - mode: image_inaccessible
+    detection: Image path broken, file missing, or URL auth-gated during --deep Pass 1.5.
+    response: Note [IMAGE SKIPPED] inline, continue with remaining images and passes.
 evaluation:
   success_signals:
     - wiki/sources/ page created or updated.
