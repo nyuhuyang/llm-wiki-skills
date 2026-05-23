@@ -1,0 +1,81 @@
+name: init-agents
+purpose: >
+  Initialize or synchronize a Harness Engineering-style agent context system for
+  a repository: short AGENTS.md navigation map plus supporting docs/ files, with
+  cold-start validation, bootstrap contract check, continuity artifact scaffolding,
+  and prose-density lint.
+trigger:
+  user_phrases:
+    - init-agents
+    - generate AGENTS.md
+    - sync AGENTS.md
+    - harness-style AGENTS.md
+    - create agent docs
+    - initialize agent context
+    - update AGENTS.md
+    - set up agent docs
+  intent_signals:
+    - The user wants a structured AGENTS.md for a repository.
+    - The user wants to sync or update an existing AGENTS.md against the current codebase.
+    - The user wants to initialize docs/ scaffolding for agent navigation.
+inputs:
+  required: []
+  optional:
+    - name: repo_path
+      description: Path to the repository root (defaults to current directory).
+outputs:
+  primary:
+    - path: AGENTS.md
+      description: Short routing file (~100 lines) with repo map, docs index, conventions, DoD, workflow, escalation.
+    - path: docs/context-maintenance.md
+      description: Continuity artifact with WIP, last validated state, open decisions, next action.
+    - path: docs/PLANS.md
+      description: Feature-list backlog with behavior/verification/state columns.
+  side_effects:
+    - docs/design-docs/index.md created if missing.
+    - docs/exec-plans/active/ and completed/ created if missing.
+    - docs/references/index.md created if missing.
+    - docs/adr/index.md created if missing.
+dependencies:
+  skills: []
+  scripts: []
+  tools: []
+  env: []
+  external_services: []
+failure_modes:
+  - mode: no_readme
+    detection: README.md absent; project name and purpose unclear.
+    response: Ask user for project name and one-line purpose before generating.
+  - mode: bootstrap_contract_incomplete
+    detection: Run command or test command not discoverable from repo files.
+    response: Generate AGENTS.md anyway; flag missing items in bootstrap contract report.
+  - mode: existing_content_conflict
+    detection: Existing AGENTS.md or docs contain substantial human-authored content.
+    response: Preserve existing content; report conflicts rather than overwriting.
+evaluation:
+  success_signals:
+    - AGENTS.md written and ≤120 lines.
+    - Cold-start test answers all 5 questions from generated docs.
+    - Bootstrap contract gaps reported explicitly.
+    - docs/context-maintenance.md created with template populated.
+    - docs/PLANS.md includes feature-list table structure.
+  checks:
+    - AGENTS.md line count ≤ 120.
+    - Escalation section present in AGENTS.md.
+    - Definition of Done section present in AGENTS.md.
+    - docs/context-maintenance.md exists after init.
+  artifacts:
+    - AGENTS.md
+    - docs/context-maintenance.md
+    - docs/PLANS.md
+schedule_eligibility:
+  eligible: false
+  execution_mode: local_only
+  rationale: Requires repo-specific discovery and human judgment on content conflicts.
+  cadence_examples: []
+security:
+  risk_level: write
+  confirmation_required: false
+  reason: Creates and updates docs only; never deletes existing content without confirmation.
+  write_paths: ["AGENTS.md", "docs/"]
+agents: [claude, codex]
